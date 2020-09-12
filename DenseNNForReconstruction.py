@@ -11,6 +11,7 @@ import d2lzh_pytorch as d2l
 import mnist_loader
 import MyMnistDataSet
 import time
+import matplotlib.pyplot as plt
 
 print(torch.__version__)
 
@@ -34,7 +35,7 @@ loss = nn.MSELoss()
 
 optimizer = torch.optim.SGD(net.parameters(), lr=0.5)
 
-num_epochs = 10
+num_epochs = 50
 
 # 读取训练数据集
 batch_size = 512
@@ -82,6 +83,23 @@ def evaluate_accuracy(data_iter, net, device=None):
             n += y.shape[0]
     return acc_sum / n
 
+def show_fashion_mnist(images):
+    d2l.use_svg_display()
+    # 这里的_表示我们忽略（不使用）的变量
+    figs = plt.subplots(1, len(images), figsize=(12, 12), sharey=True)
+    i = 1
+    for image in images:
+        plt.subplot(1, 10, i)
+        img = image.cpu()
+        #fig = figs[i]
+        print(type(img))
+        plt.imshow(img.view((28, 28)).detach().numpy())
+        #plt.axes.set_title(lbl)
+        #plt.axes.get_xaxis().set_visible(False)
+        #plt.axes.get_yaxis().set_visible(False)
+        i = i + 1
+    plt.show()
+
 def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_epochs):
     net = net.to(device)
     print("training on ", device)
@@ -109,6 +127,14 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
             #train_acc_sum += (y_hat.argmax(dim=1) == y.argmax(dim=1)).sum().cpu().item()
             n += y.shape[0]
             batch_count += 1
+
+            if epoch == 9 and batch_count == 110:
+                X = []
+                for i in range(10):
+                    X.append(y_hat[i])
+                show_fashion_mnist(X)
+
+            #print('batch count %d' % batch_count)
 
         #test_acc = evaluate_accuracy(test_iter, net)
 

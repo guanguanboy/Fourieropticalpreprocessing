@@ -236,7 +236,7 @@ def train():
             #X = []
             #for i in range(10):
             #    X.append(out[i])
-            #    show_fashion_mnist(X)
+            #show_fashion_mnist(X)
 
             #打印out和batch_train_x中前两个tensor的值
 

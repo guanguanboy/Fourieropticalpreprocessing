@@ -1,22 +1,42 @@
 from torch.utils.data import Dataset
 from PIL import Image
 import os
+import torchvision
+import torchvision.transforms as transforms
 
 class MyMnistDataSet(Dataset):
 
-    def __init__(self, root_dir, label_dir):
+    def __init__(self, root_dir, type_name, transform=None): #取值为'train'或者'test'
         self.root_dir = root_dir
-        self.label_dir = label_dir
-        self.path = os.path.join(self.root_dir, self.label_dir)
-        self.img_path = os.listdir(self.path)
+        self.type_name = type_name
+        self.transform = transform
+        self.path = os.path.join(self.root_dir, self.type_name)
+        self.img_name_list = os.listdir(self.path) #得到path目录下所有图片名称的一个list
 
     def __getitem__(self, item):
-        img_name = self.img_path[item]
-        img_item_path = os.path.join(self.root_dir, self.label_dir, img_name)
+        img_name = self.img_name_list[item]
+        img_item_path = os.path.join(self.root_dir, self.type_name, img_name)
         img = Image.open(img_item_path)
-        label = self.label_dir
-        return img, label
+
+        if self.transform is not None: #如果transform不等于None,那么执行转换
+            img = self.transform(img)
+
+        return img
 
     def __len__(self):
-        return len(self.img_path)
+        return len(self.img_name_list)
 
+
+
+"""
+def main():
+    dataset = MyMnistDataSet(root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
+    print(dataset[0])
+    print(len(dataset))
+
+"""
+
+#if __name__ == "__main__":
+#    #main()
+#    main()
+#    pass

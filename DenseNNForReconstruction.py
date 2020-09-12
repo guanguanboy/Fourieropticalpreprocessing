@@ -9,13 +9,19 @@ import sys
 sys.path.append("..")
 import d2lzh_pytorch as d2l
 import mnist_loader
+import MyMnistDataSet
+import time
 
 print(torch.__version__)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 #定义模型
 num_inputs, num_outputs, num_hiddens = 784, 10, 784
 
 net = nn.Sequential(
+    d2l.FlattenLayer(),
     nn.Linear(num_inputs, num_hiddens), # nn.Linear就是一个全连接层
     nn.ReLU(),
     nn.Linear(num_hiddens, num_inputs)
@@ -28,37 +34,88 @@ loss = nn.MSELoss()
 
 optimizer = torch.optim.SGD(net.parameters(), lr=0.5)
 
-num_epochs = 5
+num_epochs = 10
 
 # 读取训练数据集
-batch_size = 20
+batch_size = 512
 
 # 获取原始数据集
-mnist_train = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=True, download=True, transform=transforms.ToTensor())
-mnist_test = torchvision.datasets.FashionMNIST(root='~/Datasets/FashionMNIST', train=False, download=True, transform=transforms.ToTensor())
-
-train_set_size = len(mnist_train)
-test_set_size = len(mnist_test)
-
-train_feature, test_feature = [], []
-
-train_label, test_label = [], []
-
-for i in range(train_set_size):
-    train_feature.append(mnist_train[i][0])
-    train_label.append(mnist_train[i][0])
-
-for i in range(test_set_size):
-    test_feature.append(mnist_test[i][0])
-    test_label.append(mnist_test[i][0])
-
-mnist_train_data = mnist_loader.MnistForReconstruction(train_feature)
-mnist_test_data = mnist_loader.MnistForReconstruction(test_feature)
-
-train_loader = torch.utils.data.DataLoader(mnist_train_data, batch_size, shuffle=False,
-                                           num_works=5)
-
 #需要从原始数据集中构造出Y与X，然后返回合适的train_iter和test_iter
+if sys.platform.startswith('win'):
+    num_workers = 0  # 0表示不用额外的进程来加速读取数据
+else:
+    num_workers = 4
+
+mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
+train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
+                                                num_workers=num_workers)
+
+mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
+test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
+                                               num_workers=num_workers)
 
 
-#d2l.train_ch3(net, train_iter, test_iter, loss, num_epochs, batch_size, None, None, optimizer)
+#训练网络
+
+#该函数无法使用，因为我们做的是图像重建，所以没法直接用重建后的像素值是否相等来比较准确率，只能通过MSE或者SSIM来衡量
+def evaluate_accuracy(data_iter, net, device=None):
+    if device is None and isinstance(net, torch.nn.Module):
+        # 如果没指定device就使用net的device
+        device = list(net.parameters())[0].device
+    acc_sum, n = 0.0, 0
+    with torch.no_grad():
+        for X in data_iter:
+
+            y = X
+            y = y.view(y.shape[0], -1)
+
+            if isinstance(net, torch.nn.Module):
+                net.eval() # 评估模式, 这会关闭dropout
+                acc_sum += (net(X.to(device)).argmax(dim=1) == (y.to(device)).argmax(dim=1)).float().sum().cpu().item()
+                net.train() # 改回训练模式
+            else: # 自定义的模型, 3.13节之后不会用到, 不考虑GPU
+                if('is_training' in net.__code__.co_varnames): # 如果有is_training这个参数
+                    # 将is_training设置成False
+                    acc_sum += (net(X, is_training=False).argmax(dim=1) == y.argmax(dim=1)).float().sum().item()
+                else:
+                    acc_sum += (net(X).argmax(dim=1) == y.argmax(dim=1)).float().sum().item()
+            n += y.shape[0]
+    return acc_sum / n
+
+def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_epochs):
+    net = net.to(device)
+    print("training on ", device)
+    for epoch in range(num_epochs):
+        train_l_sum, train_acc_sum, n, batch_count, start = 0.0, 0.0, 0, 0, time.time()
+        for X in train_iter:
+            y = X
+
+            X = X.to(device)
+            y = y.view(y.shape[0], -1)
+            #print('y.shape = ')
+            #print(y.shape)
+            y = y.to(device)
+
+            y_hat = net(X)
+            #print('y_hat.shape = ')
+            #print(y_hat.shape)
+            l = loss(y_hat, y)
+
+            optimizer.zero_grad()
+            l.backward()
+            optimizer.step()
+
+            train_l_sum += l.cpu().item()
+            #train_acc_sum += (y_hat.argmax(dim=1) == y.argmax(dim=1)).sum().cpu().item()
+            n += y.shape[0]
+            batch_count += 1
+
+        #test_acc = evaluate_accuracy(test_iter, net)
+
+        #print('epoch %d, loss %.4f, train acc %.3f, test acc %.3f, time %.1f sec'
+        #      % (epoch + 1, train_l_sum / batch_count, train_acc_sum / n, test_acc, time.time() - start))
+        print('epoch %d, loss %.4f, time %.1f sec'
+              % (epoch + 1, train_l_sum / batch_count, time.time() - start))
+
+
+train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)

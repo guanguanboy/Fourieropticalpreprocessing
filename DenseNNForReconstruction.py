@@ -19,13 +19,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 #定义模型
-num_inputs, num_outputs, num_hiddens = 784, 10, 784
+num_inputs, num_outputs, num_hiddens = 784, 784, 10
 
 net = nn.Sequential(
     d2l.FlattenLayer(),
     nn.Linear(num_inputs, num_hiddens), # nn.Linear就是一个全连接层
     nn.ReLU(),
-    nn.Linear(num_hiddens, num_inputs)
+    nn.Linear(num_hiddens, num_outputs)
 )
 
 for params in net.parameters():
@@ -35,7 +35,7 @@ loss = nn.MSELoss()
 
 optimizer = torch.optim.SGD(net.parameters(), lr=0.5)
 
-num_epochs = 50
+num_epochs = 100
 
 # 读取训练数据集
 batch_size = 512
@@ -143,5 +143,5 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
         print('epoch %d, loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))
 
-
+print(net)
 train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)

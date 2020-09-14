@@ -20,6 +20,7 @@ from tqdm import tqdm, trange
 import cv2
 from UnetForFashionMnistNew import UNetForFashionMnistNew
 import matplotlib.pyplot as plt
+import time
 
 #loss = nn.MSELoss()
 
@@ -189,7 +190,7 @@ def show_fashion_mnist(images):
 
 
 def train():
-    epoch = 10
+    epoch = 100
     batch_size = 512
 
 
@@ -219,7 +220,7 @@ def train():
     #for _ in t:
     batch_cout = np.floor(x_train.shape[0] / batch_size).astype(int)
     for epo in range(0, epoch):
-
+        start = time.time()
         for i in range(0, batch_cout):
             batch_train_x = torch.from_numpy(x_train[i * batch_size: (i + 1) * batch_size]).float()
             batch_train_y = torch.from_numpy(y_train[i * batch_size: (i + 1) * batch_size]).float()
@@ -230,8 +231,8 @@ def train():
 
             optimizer.zero_grad()
             out = unet(batch_train_x)
-            print(type(out))
-            print(out.size())
+            #print(type(out))
+            #print(out.size())
 
             #X = []
             #for i in range(10):
@@ -264,6 +265,7 @@ def train():
             optimizer.step()
 
             print('This is batch {i} in epoch {epo}, the loss is {loss}'.format(i=i, epo=epo, loss=loss))
+        print('epoch %d, time %.1f sec' % (epoch + 1, time.time() - start))
 
 
 """

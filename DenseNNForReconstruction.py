@@ -19,7 +19,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 #定义模型
-num_inputs, num_outputs, num_hiddens = 784, 784, 10
+num_inputs, num_outputs, num_hiddens = 784, 784, 50
 
 net = nn.Sequential(
     d2l.FlattenLayer(),
@@ -47,14 +47,21 @@ if sys.platform.startswith('win'):
 else:
     num_workers = 4
 
-mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
+mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
 train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
                                                 num_workers=num_workers)
 
-mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
+mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
 test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
                                                num_workers=num_workers)
 
+mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
+train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
+                                                num_workers=num_workers)
+
+mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
+test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
+                                               num_workers=num_workers)
 
 #训练网络
 
@@ -105,8 +112,7 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
     print("training on ", device)
     for epoch in range(num_epochs):
         train_l_sum, train_acc_sum, n, batch_count, start = 0.0, 0.0, 0, 0, time.time()
-        for X in train_iter:
-            y = X
+        for X,y in train_iter:
 
             X = X.to(device)
             y = y.view(y.shape[0], -1)
@@ -128,7 +134,7 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
             n += y.shape[0]
             batch_count += 1
 
-            if epoch == 9 and batch_count == 110:
+            if epoch == 99 and batch_count == 110:
                 X = []
                 for i in range(10):
                     X.append(y_hat[i])
@@ -145,3 +151,5 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
 
 print(net)
 train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)
+
+#train(net, train_data_loader_with_noise, test_data_loader_with_noise, loss, batch_size, optimizer, device, num_epochs)

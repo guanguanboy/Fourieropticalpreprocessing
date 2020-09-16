@@ -56,11 +56,11 @@ test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, s
                                                num_workers=num_workers)
 
 mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
-train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
+train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size, shuffle=False,
                                                 num_workers=num_workers)
 
 mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
-test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
+test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
                                                num_workers=num_workers)
 
 #训练网络
@@ -114,7 +114,12 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
         train_l_sum, train_acc_sum, n, batch_count, start = 0.0, 0.0, 0, 0, time.time()
         for X,y in train_iter:
 
+            #print('X.shape =')
+            #print(X.shape)
             X = X.to(device)
+
+            #print('original y.shape = ')
+            #print(y.shape)
             y = y.view(y.shape[0], -1)
             #print('y.shape = ')
             #print(y.shape)

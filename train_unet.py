@@ -21,6 +21,7 @@ import cv2
 from UnetForFashionMnistNew import UNetForFashionMnistNew
 import matplotlib.pyplot as plt
 import time
+import MyMnistDataSet
 
 #loss = nn.MSELoss()
 
@@ -285,7 +286,95 @@ def train():
 """
 
 
+def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, device, num_epochs):
+    net = net.to(device)
+    print("training on ", device)
+    for epoch in range(num_epochs):
+        train_l_sum, train_acc_sum, n, batch_count, start = 0.0, 0.0, 0, 0, time.time()
+        for X, y in train_iter:
+
+            #print('X.shape =')
+            #print(X.shape)
+
+            #print('original y.shape = ')
+            #print(y.shape)
+
+            X = X.to(device)
+            y = y.to(device)
+            #print('y.shape = ')
+            #print(y.shape)
+
+            y_hat = net(X)
+            #print('y_hat.shape = ')
+            #print(y_hat.shape)
+
+            l = loss(y_hat, y)
+
+            optimizer.zero_grad()
+            l.backward()
+            optimizer.step()
+
+            train_l_sum += l.cpu().item()
+            n += y.shape[0]
+            batch_count += 1
+
+            if epoch == 99 and batch_count == 110:
+                X = []
+                for i in range(10):
+                    X.append(y_hat[i])
+                show_fashion_mnist(X)
+
+        print('epoch %d, loss %.4f, time %.1f sec'
+              % (epoch + 1, train_l_sum / batch_count, time.time() - start))
+
+def trainUnet():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    unet = UNetForFashionMnistNew(in_channel=1,out_channel=1)
+
+    # 读取训练数据集
+    batch_size = 512
+
+    # 获取原始数据集
+    # 需要从原始数据集中构造出Y与X，然后返回合适的train_iter和test_iter
+    if sys.platform.startswith('win'):
+        num_workers = 0  # 0表示不用额外的进程来加速读取数据
+    else:
+        num_workers = 4
+
+    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+                                                        type_name='train', transform=transforms.ToTensor())
+    train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
+                                                    num_workers=num_workers)
+
+    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+                                                       type_name='test', transform=transforms.ToTensor())
+    test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
+                                                   num_workers=num_workers)
+
+    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
+                                                                   label_root_dir='./mnist_dataset', type_name='train',
+                                                                   transform=transforms.ToTensor())
+    train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size, shuffle=False,
+                                                               num_workers=num_workers)
+
+    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
+                                                                  label_root_dir='./mnist_dataset', type_name='test',
+                                                                  transform=transforms.ToTensor())
+    test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
+                                                              num_workers=num_workers)
+
+    criterion = nn.MSELoss()
+
+    optimizer = torch.optim.SGD(unet.parameters(), lr = 1e-2, momentum = 0.1)
+
+    num_epochs = 100
+
+    trainUnetWithMyMnistDataSet(unet, train_data_loader, test_data_loader, criterion, optimizer, device, num_epochs)
+
 if __name__ == "__main__":
     #main()
-    train()
+    #train()
+
+    trainUnet()
     pass

@@ -187,8 +187,34 @@ def show_fashion_mnist(images):
         #plt.axes.get_xaxis().set_visible(False)
         #plt.axes.get_yaxis().set_visible(False)
         i = i + 1
-    plt.show()
 
+def show_fashion_mnist_with_origin_img(origin_images, images):
+    d2l.use_svg_display()
+    # 这里的_表示我们忽略（不使用）的变量
+    figs = plt.subplots(2, len(images), figsize=(12, 12), sharey=True)
+    i = 1
+    for image in origin_images:
+        plt.subplot(2, 10, i)
+        img = image.cpu()
+        #fig = figs[i]
+        print(type(img))
+        plt.imshow(img.view((28, 28)).detach().numpy())
+        #plt.axes.set_title(lbl)
+        #plt.axes.get_xaxis().set_visible(False)
+        #plt.axes.get_yaxis().set_visible(False)
+        i = i + 1
+    i = 1
+    for image in images:
+        plt.subplot(2, 10, 10+i)
+        img = image.cpu()
+        #fig = figs[i]
+        print(type(img))
+        plt.imshow(img.view((28, 28)).detach().numpy())
+        #plt.axes.set_title(lbl)
+        #plt.axes.get_xaxis().set_visible(False)
+        #plt.axes.get_yaxis().set_visible(False)
+        i = i + 1
+    plt.show()
 
 def train():
     epoch = 100
@@ -319,10 +345,12 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
             batch_count += 1
 
             if epoch == 99 and batch_count == 110:
-                X = []
+                output_img = []
+                origin_img = []
                 for i in range(10):
-                    X.append(y_hat[i])
-                show_fashion_mnist(X)
+                    origin_img.append(X[i])
+                    output_img.append(y_hat[i])
+                    show_fashion_mnist_with_origin_img(origin_img, output_img)
 
         print('epoch %d, loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))
@@ -370,7 +398,9 @@ def trainUnet():
 
     num_epochs = 100
 
-    trainUnetWithMyMnistDataSet(unet, train_data_loader, test_data_loader, criterion, optimizer, device, num_epochs)
+    #trainUnetWithMyMnistDataSet(unet, train_data_loader, test_data_loader, criterion, optimizer, device, num_epochs)
+    trainUnetWithMyMnistDataSet(unet, train_data_loader_with_noise, test_data_loader_with_noise, criterion, optimizer, device, num_epochs)
+
 
 if __name__ == "__main__":
     #main()

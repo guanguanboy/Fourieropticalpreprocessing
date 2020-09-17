@@ -292,6 +292,10 @@ def train():
             optimizer.step()
 
             print('This is batch {i} in epoch {epo}, the loss is {loss}'.format(i=i, epo=epo, loss=loss))
+
+        if (epoch) % 10 == 0:
+            torch.save(unet.state_dict(), './pretrained_models/model%d.pth' % epoch)  # save for 5 epochs
+
         print('epoch %d, time %.1f sec' % (epoch + 1, time.time() - start))
 
 
@@ -352,8 +356,34 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
                     output_img.append(y_hat[i])
                     show_fashion_mnist_with_origin_img(origin_img, output_img)
 
-        print('epoch %d, loss %.4f, time %.1f sec'
+        if (epoch+1) % 10 == 0:
+            torch.save(net.state_dict(), './pretrained_models/model%d.pth' % epoch+1)  # save for 5 epochs
+
+        print('epoch %d, train loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))
+
+        evaluateUnet(net=net, testDataLoader=test_iter, epoch=epoch, loss=loss)
+
+def evaluateUnet(net, testDataLoader, epoch, loss, device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
+    test_loss_sum, batch_count, start_time = 0.0, 0, time.time()
+    with torch.no_grad():
+        for X, y in testDataLoader:
+            if isinstance(net, torch.nn.Module):
+                net.eval() #进入评估模式，这会关闭dropout等
+                X = X.to(device)
+                y = y.to(device)
+                y_hat = net(X)
+
+                l = loss(y_hat, y)
+                test_loss_sum += l.cpu().item()
+                batch_count += 1
+
+                #改回训练模式
+                net.train()
+
+        print('epoch %d, batch_cout %d, test loss %.4f, time %.1f sec'
+              % (epoch + 1, batch_count, test_loss_sum / batch_count, time.time() - start_time))
+
 
 def trainUnet():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

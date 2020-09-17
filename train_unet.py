@@ -357,7 +357,7 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
                     show_fashion_mnist_with_origin_img(origin_img, output_img)
 
         if (epoch+1) % 10 == 0:
-            torch.save(net.state_dict(), './pretrained_models/model%d.pth' % epoch+1)  # save for 5 epochs
+            torch.save(net.state_dict(), './pretrained_models/unet_model%d.pth' % epoch+1)  # save for every 10 epochs
 
         print('epoch %d, train loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))

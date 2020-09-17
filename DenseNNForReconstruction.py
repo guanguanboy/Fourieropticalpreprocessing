@@ -12,83 +12,11 @@ import mnist_loader
 import MyMnistDataSet
 import time
 import matplotlib.pyplot as plt
+import DNNModel
 
 print(torch.__version__)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-#定义模型
-num_inputs, num_outputs, num_hiddens = 784, 784, 50
-
-net = nn.Sequential(
-    d2l.FlattenLayer(),
-    nn.Linear(num_inputs, num_hiddens), # nn.Linear就是一个全连接层
-    nn.ReLU(),
-    nn.Linear(num_hiddens, num_outputs)
-)
-
-for params in net.parameters():
-    init.normal_(params, mean=0, std=0.01) #使用正态分布的方法初始化参数
-
-loss = nn.MSELoss()
-
-optimizer = torch.optim.SGD(net.parameters(), lr=0.5)
-
-num_epochs = 100
-
-# 读取训练数据集
-batch_size = 512
-
-# 获取原始数据集
-#需要从原始数据集中构造出Y与X，然后返回合适的train_iter和test_iter
-if sys.platform.startswith('win'):
-    num_workers = 0  # 0表示不用额外的进程来加速读取数据
-else:
-    num_workers = 4
-
-mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
-train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
-                                                num_workers=num_workers)
-
-mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
-test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
-                                               num_workers=num_workers)
-
-mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='train', transform=transforms.ToTensor())
-train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size, shuffle=False,
-                                                num_workers=num_workers)
-
-mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise', label_root_dir='./mnist_dataset', type_name='test', transform=transforms.ToTensor())
-test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
-                                               num_workers=num_workers)
-
-#训练网络
-
-#该函数无法使用，因为我们做的是图像重建，所以没法直接用重建后的像素值是否相等来比较准确率，只能通过MSE或者SSIM来衡量
-def evaluate_accuracy(data_iter, net, device=None):
-    if device is None and isinstance(net, torch.nn.Module):
-        # 如果没指定device就使用net的device
-        device = list(net.parameters())[0].device
-    acc_sum, n = 0.0, 0
-    with torch.no_grad():
-        for X in data_iter:
-
-            y = X
-            y = y.view(y.shape[0], -1)
-
-            if isinstance(net, torch.nn.Module):
-                net.eval() # 评估模式, 这会关闭dropout
-                acc_sum += (net(X.to(device)).argmax(dim=1) == (y.to(device)).argmax(dim=1)).float().sum().cpu().item()
-                net.train() # 改回训练模式
-            else: # 自定义的模型, 3.13节之后不会用到, 不考虑GPU
-                if('is_training' in net.__code__.co_varnames): # 如果有is_training这个参数
-                    # 将is_training设置成False
-                    acc_sum += (net(X, is_training=False).argmax(dim=1) == y.argmax(dim=1)).float().sum().item()
-                else:
-                    acc_sum += (net(X).argmax(dim=1) == y.argmax(dim=1)).float().sum().item()
-            n += y.shape[0]
-    return acc_sum / n
 
 def show_fashion_mnist(images):
     d2l.use_svg_display()
@@ -106,6 +34,29 @@ def show_fashion_mnist(images):
         #plt.axes.get_yaxis().set_visible(False)
         i = i + 1
     plt.show()
+
+def evaluateDNN(net, testDataLoader, epoch, loss, device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
+    test_loss_sum, batch_count, start_time = 0.0, 0, time.time()
+    with torch.no_grad():
+        for X, y in testDataLoader:
+            if isinstance(net, torch.nn.Module):
+                net.eval() #进入评估模式，这会关闭dropout等
+                X = X.to(device)
+
+                y = y.view(y.shape[0], -1)
+                y = y.to(device)
+
+                y_hat = net(X)
+
+                l = loss(y_hat, y)
+                test_loss_sum += l.cpu().item()
+                batch_count += 1
+
+                #改回训练模式
+                net.train()
+
+        print('epoch %d, batch_cout %d, test loss %.4f, time %.1f sec'
+              % (epoch + 1, batch_count, test_loss_sum / batch_count, time.time() - start_time))
 
 def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_epochs):
     net = net.to(device)
@@ -145,6 +96,9 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
                     X.append(y_hat[i])
                 show_fashion_mnist(X)
 
+        if (epoch + 1) % 10 == 0:
+            torch.save(net.state_dict(),
+                       './pretrained_models/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
             #print('batch count %d' % batch_count)
 
         #test_acc = evaluate_accuracy(test_iter, net)
@@ -154,7 +108,71 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
         print('epoch %d, loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))
 
-print(net)
-train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)
+        evaluateDNN(net, test_iter, epoch, loss, device)
 
-#train(net, train_data_loader_with_noise, test_data_loader_with_noise, loss, batch_size, optimizer, device, num_epochs)
+
+def trainDenseNN():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # 定义模型
+    num_inputs, num_outputs, num_hiddens = 784, 784, 50
+
+    net = DNNModel.DNN(num_inputs=num_inputs, num_hiddens=num_hiddens, num_outputs=num_outputs)
+
+    """
+    net = nn.Sequential(
+        d2l.FlattenLayer(),
+        nn.Linear(num_inputs, num_hiddens),  # nn.Linear就是一个全连接层
+        nn.ReLU(),
+        nn.Linear(num_hiddens, num_outputs)
+    )
+
+    for params in net.parameters():
+        init.normal_(params, mean=0, std=0.01)  # 使用正态分布的方法初始化参数
+    """
+
+    loss = nn.MSELoss()
+
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.5)
+
+    num_epochs = 100
+
+    # 读取训练数据集
+    batch_size = 512
+
+    # 获取原始数据集
+    # 需要从原始数据集中构造出Y与X，然后返回合适的train_iter和test_iter
+    if sys.platform.startswith('win'):
+        num_workers = 0  # 0表示不用额外的进程来加速读取数据
+    else:
+        num_workers = 4
+
+    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+                                                        type_name='train', transform=transforms.ToTensor())
+    train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
+                                                    num_workers=num_workers)
+
+    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+                                                       type_name='test', transform=transforms.ToTensor())
+    test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
+                                                   num_workers=num_workers)
+
+    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
+                                                                   label_root_dir='./mnist_dataset', type_name='train',
+                                                                   transform=transforms.ToTensor())
+    train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size,
+                                                               shuffle=False,
+                                                               num_workers=num_workers)
+
+    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
+                                                                  label_root_dir='./mnist_dataset', type_name='test',
+                                                                  transform=transforms.ToTensor())
+    test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
+                                                              num_workers=num_workers)
+
+    print(net)
+    train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)
+    #train(net, train_data_loader_with_noise, test_data_loader_with_noise, loss, batch_size, optimizer, device, num_epochs)
+
+if __name__ == "__main__":
+    trainDenseNN()

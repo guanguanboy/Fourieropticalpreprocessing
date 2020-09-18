@@ -316,7 +316,7 @@ def train():
 """
 
 
-def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, device, num_epochs):
+def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, device, num_epochs, is_noise_data=False):
     net = net.to(device)
     print("training on ", device)
     for epoch in range(num_epochs):
@@ -357,7 +357,11 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
                     show_fashion_mnist_with_origin_img(origin_img, output_img)
 
         if (epoch+1) % 10 == 0:
-            torch.save(net.state_dict(), './pretrained_models/unet_model%d.pth' % epoch+1)  # save for every 10 epochs
+
+            if(is_noise_data):
+                torch.save(net.state_dict(), './pretrained_models_noise/unet_model%d.pth' % (epoch+1))  # save for every 10 epochs
+            else:
+                torch.save(net.state_dict(), './pretrained_models/unet_model%d.pth' % (epoch+1))  # save for every 10 epochs
 
         print('epoch %d, train loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))
@@ -424,12 +428,12 @@ def trainUnet():
 
     criterion = nn.MSELoss()
 
-    optimizer = torch.optim.SGD(unet.parameters(), lr = 1e-2, momentum = 0.1)
+    optimizer = torch.optim.SGD(unet.parameters(), lr=1e-2, momentum=0.1)
 
     num_epochs = 100
 
-    #trainUnetWithMyMnistDataSet(unet, train_data_loader, test_data_loader, criterion, optimizer, device, num_epochs)
-    trainUnetWithMyMnistDataSet(unet, train_data_loader_with_noise, test_data_loader_with_noise, criterion, optimizer, device, num_epochs)
+    trainUnetWithMyMnistDataSet(unet, train_data_loader, test_data_loader, criterion, optimizer, device, num_epochs)
+    #trainUnetWithMyMnistDataSet(unet, train_data_loader_with_noise, test_data_loader_with_noise, criterion, optimizer, device, num_epochs, True)
 
 
 if __name__ == "__main__":

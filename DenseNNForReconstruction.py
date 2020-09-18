@@ -58,7 +58,7 @@ def evaluateDNN(net, testDataLoader, epoch, loss, device = torch.device('cuda' i
         print('epoch %d, batch_cout %d, test loss %.4f, time %.1f sec'
               % (epoch + 1, batch_count, test_loss_sum / batch_count, time.time() - start_time))
 
-def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_epochs):
+def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_epochs, is_noise_data=False):
     net = net.to(device)
     print("training on ", device)
     for epoch in range(num_epochs):
@@ -97,8 +97,12 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
                 show_fashion_mnist(X)
 
         if (epoch + 1) % 10 == 0:
-            torch.save(net.state_dict(),
-                       './pretrained_models/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
+            if (is_noise_data):
+                torch.save(net.state_dict(),
+                           './pretrained_models_noise/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
+            else:
+                torch.save(net.state_dict(),
+                           './pretrained_models/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
             #print('batch count %d' % batch_count)
 
         #test_acc = evaluate_accuracy(test_iter, net)
@@ -172,7 +176,7 @@ def trainDenseNN():
 
     print(net)
     train(net, train_data_loader, test_data_loader, loss, batch_size, optimizer, device, num_epochs)
-    #train(net, train_data_loader_with_noise, test_data_loader_with_noise, loss, batch_size, optimizer, device, num_epochs)
+    #train(net, train_data_loader_with_noise, test_data_loader_with_noise, loss, batch_size, optimizer, device, num_epochs, True)
 
 if __name__ == "__main__":
     trainDenseNN()

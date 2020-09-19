@@ -6,8 +6,8 @@ import torchvision.transforms as transforms
 
 import numpy as np
 import sys
-sys.path.append("..")
-import d2lzh_pytorch as d2l
+sys.path.append(".")
+#import d2lzh_pytorch as d2l
 import mnist_loader
 
 import gc
@@ -15,8 +15,13 @@ from Unet import UNet
 import torch
 import sys
 import os
+import platform
 
-#os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+if (platform.system() == 'Windows'):
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+else:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 gc.collect()
 use_gpu = torch.cuda.is_available()
@@ -358,7 +363,7 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
                 for i in range(10):
                     origin_img.append(X[i])
                     output_img.append(y_hat[i])
-                    show_fashion_mnist_with_origin_img(origin_img, output_img)
+                    #show_fashion_mnist_with_origin_img(origin_img, output_img)
 
         if (epoch+1) % 10 == 0:
 
@@ -408,24 +413,34 @@ def trainUnet():
     else:
         num_workers = 4
 
-    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset', label_root_dir='D:/DataSets/mnist_dataset',
+    print(platform.system())
+
+    if (platform.system() == 'Windows'):
+        orign_data_root_dir = 'D:/DataSets/mnist_dataset'
+        noise_data_root_dir = 'D:/DataSets/mnist_dataset_noise'
+    else:
+        orign_data_root_dir = '/media/data/liguanlin/DataSets/mnist_dataset'
+        noise_data_root_dir = '/media/data/liguanlin/DataSets/mnist_dataset_noise'
+
+    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir=orign_data_root_dir,
+                                                        label_root_dir=orign_data_root_dir,
                                                         type_name='train', transform=transforms.ToTensor())
     train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
                                                     num_workers=num_workers)
 
-    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset', label_root_dir='D:/DataSets/mnist_dataset',
+    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir=orign_data_root_dir, label_root_dir=orign_data_root_dir,
                                                        type_name='test', transform=transforms.ToTensor())
     test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
                                                    num_workers=num_workers)
 
-    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset_noise',
-                                                                   label_root_dir='D:/DataSets/mnist_dataset', type_name='train',
+    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir=noise_data_root_dir,
+                                                                   label_root_dir=orign_data_root_dir, type_name='train',
                                                                    transform=transforms.ToTensor())
     train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size, shuffle=False,
                                                                num_workers=num_workers)
 
-    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset_noise',
-                                                                  label_root_dir='D:/DataSets/mnist_dataset', type_name='test',
+    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir=noise_data_root_dir,
+                                                                  label_root_dir=orign_data_root_dir, type_name='test',
                                                                   transform=transforms.ToTensor())
     test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
                                                               num_workers=num_workers)

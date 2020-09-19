@@ -151,25 +151,25 @@ def trainDenseNN():
     else:
         num_workers = 4
 
-    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+    mnist_train_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset', label_root_dir='D:/DataSets/mnist_dataset',
                                                         type_name='train', transform=transforms.ToTensor())
     train_data_loader = torch.utils.data.DataLoader(mnist_train_dataset, batch_size, shuffle=False,
                                                     num_workers=num_workers)
 
-    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset', label_root_dir='./mnist_dataset',
+    mnist_test_dataset = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset', label_root_dir='D:/DataSets/mnist_dataset',
                                                        type_name='test', transform=transforms.ToTensor())
     test_data_loader = torch.utils.data.DataLoader(mnist_test_dataset, batch_size, shuffle=False,
                                                    num_workers=num_workers)
 
-    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
-                                                                   label_root_dir='./mnist_dataset', type_name='train',
+    mnist_train_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset_noise',
+                                                                   label_root_dir='D:/DataSets/mnist_dataset', type_name='train',
                                                                    transform=transforms.ToTensor())
     train_data_loader_with_noise = torch.utils.data.DataLoader(mnist_train_dataset_with_noise, batch_size,
                                                                shuffle=False,
                                                                num_workers=num_workers)
 
-    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='./mnist_dataset_noise',
-                                                                  label_root_dir='./mnist_dataset', type_name='test',
+    mnist_test_dataset_with_noise = MyMnistDataSet.MyMnistDataSet(root_dir='D:/DataSets/mnist_dataset_noise',
+                                                                  label_root_dir='D:/DataSets/mnist_dataset', type_name='test',
                                                                   transform=transforms.ToTensor())
     test_data_loader_with_noise = torch.utils.data.DataLoader(mnist_test_dataset_with_noise, batch_size, shuffle=False,
                                                               num_workers=num_workers)

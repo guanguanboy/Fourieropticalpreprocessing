@@ -107,9 +107,16 @@ def train(net, train_iter, test_iter, loss, batch_size, optimizer, device, num_e
             if (is_noise_data):
                 torch.save(net.state_dict(),
                            './pretrained_models_noise/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
+
+                #保存整个模型
+                torch.save(net, './pretrained_models_noise/dnn_model.pth')
             else:
                 torch.save(net.state_dict(),
                            './pretrained_models/dnn_model%d.pth' % (epoch + 1))  # save for every 10 epochs
+
+                #保存整个模型
+                torch.save(net, './pretrained_models/dnn_model.pth')
+
             #print('batch count %d' % batch_count)
 
         #test_acc = evaluate_accuracy(test_iter, net)

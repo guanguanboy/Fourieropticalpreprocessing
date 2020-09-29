@@ -369,8 +369,10 @@ def trainUnetWithMyMnistDataSet(net, train_iter, test_iter, loss, optimizer, dev
 
             if(is_noise_data):
                 torch.save(net.state_dict(), './pretrained_models_noise/unet_model%d.pth' % (epoch+1))  # save for every 10 epochs
+                torch.save(net, './pretrained_models_noise/unet_model.pth')
             else:
                 torch.save(net.state_dict(), './pretrained_models/unet_model%d.pth' % (epoch+1))  # save for every 10 epochs
+                torch.save(net, './pretrained_models/unet_model.pth')
 
         print('epoch %d, train loss %.4f, time %.1f sec'
               % (epoch + 1, train_l_sum / batch_count, time.time() - start))

@@ -4,10 +4,18 @@ import numpy as np
 # Since only one is used in training you can comment one of them
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.fashion_mnist.load_data()
 (x_num, y_num), (x_test_num, y_test_num) = tf.keras.datasets.mnist.load_data()
+
+print(type(x_num))
+print(type(y_test_num))
+print(x_num.shape)
+print(y_test_num.shape)
+
+
 import matplotlib.pyplot as plt
 from keras import optimizers as kopt
 from keras.models import Sequential
 from keras.layers import Dense
+import os
 
 # Geometry definition
 N=28
@@ -94,6 +102,8 @@ Bt = Bt.reshape(x_test.shape[0], 28 ** 2)
 Cdt = np.hstack((At, Bt))
 Cdt_show = Cdt.reshape(x_test.shape[0], 28, 56)
 
+
+
 print('Cdt.shape: ')
 print(Cdt.shape)
 
@@ -104,6 +114,44 @@ print('x_test_type:')
 print(type(x_test))
 
 print(x_test.shape)
+
+"""
+#读取图片作为输入训练网络
+image_root_dir = 'D:/DataSets/Result/train'
+#image_path = os.path.join(image_root_dir, self.type_name)
+img_name_list = os.listdir(image_root_dir)  # 得到path目录下所有图片名称的一个list
+
+from skimage import io
+
+image_list = []
+
+image_count = len(img_name_list)
+print('image_count:')
+print(image_count)
+for i in range(image_count):
+    img_item_path = os.path.join(image_root_dir, img_name_list[i])
+    img=io.imread(img_item_path)
+    image_list.append(img)
+
+#保存Cdt_show
+image_save_root_dir = 'D:/DataSets/Result/saved'
+
+for i in range(25):
+    img_item_path = os.path.join(image_save_root_dir, img_name_list[i])
+    io.imsave(img_item_path, Cdt_show[i])
+
+print('image_array_type')
+print(type(image_list))
+
+image_array = np.array(image_list)
+print(image_array.shape)
+print(type(image_list))
+
+CdP = image_array.reshape(x_train.shape[0], 2*28**2)
+print('CdP shape')
+print(CdP.shape)
+"""
+
 # Create the model with two layers
 
 # The performance depends on the version of Tensorflow
@@ -124,7 +172,7 @@ model.compile(loss='mean_squared_error', optimizer='adam')
 # Training section
 St_tr = 30
 En_tr = 50000
-story = model.fit(Cd[St_tr:En_tr]/100, xr[St_tr:En_tr], epochs=ep)
+story = model.fit(CdP[St_tr:En_tr], xr[St_tr:En_tr], epochs=ep)
 
 
 model.summary()
@@ -132,7 +180,7 @@ model.summary()
 # Use model to predict the shapes
 St_te = 0
 En_te = 10000
-x_pr = model.predict(Cdt[St_te:En_te]/100)
+x_pr = model.predict(CdP[St_te:En_te])
 x_pred = x_pr.reshape(x_pr.shape[0], 28, 28)
 
 
